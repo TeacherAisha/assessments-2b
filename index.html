@@ -9,7 +9,7 @@
   body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: #111;
+    background: #0a2342; /* DARK BLUE */
     color: white;
     overflow: hidden;
   }
@@ -17,7 +17,7 @@
   #warningScreen {
     position: fixed;
     inset: 0;
-    background: #111;
+    background: #0a2342;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -55,6 +55,37 @@
     border: none;
   }
 
+  /* RIGHT SIDE EXIT UI */
+  #exitWrapper {
+    position: fixed;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 999999;
+    text-align: center;
+  }
+
+  #exitWarningText {
+    background: rgba(255, 0, 0, 0.85);
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    margin-bottom: 10px;
+    width: 160px;
+  }
+
+  #exitTestBtn {
+    padding: 15px 18px;
+    font-size: 14px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 160px;
+  }
+
   /* CONTROL PANEL */
   #controlPanel {
     position: fixed;
@@ -82,23 +113,6 @@
     border: none;
   }
 
-  /* RIGHT SIDE WARNING */
-  #exitWarning {
-    position: fixed;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255, 0, 0, 0.85);
-    color: white;
-    padding: 15px;
-    border-radius: 10px;
-    font-size: 14px;
-    max-width: 180px;
-    z-index: 999999;
-    text-align: center;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-  }
-
   /* LOG BOX */
   #logBox {
     position: fixed;
@@ -116,11 +130,6 @@
 
 <body>
 
-<!-- RIGHT SIDE WARNING -->
-<div id="exitWarning">
-  ⚠️ Click <b>Submit & Exit</b> before you exit the test
-</div>
-
 <!-- START SCREEN -->
 <div id="warningScreen">
   <h1>Secure Online Test</h1>
@@ -137,6 +146,14 @@
 
 <!-- TIMER -->
 <div id="timer">40:00</div>
+
+<!-- EXIT UI -->
+<div id="exitWrapper">
+  <div id="exitWarningText">
+    Submit your assessment before exiting.
+  </div>
+  <button id="exitTestBtn">Exit Test</button>
+</div>
 
 <!-- CONTROL PANEL -->
 <div id="controlPanel">
@@ -215,7 +232,7 @@ function startWatchdog() {
 
     if (!document.fullscreenElement && !allowExit) {
       controlPanel.style.display = "block";
-      logEvent("Fullscreen lost (watchdog)");
+      logEvent("Fullscreen lost");
     }
 
   }, 500);
@@ -239,7 +256,21 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ---------------- BUTTONS ----------------
+// ---------------- EXIT BUTTON ----------------
+document.getElementById("exitTestBtn").addEventListener("click", () => {
+
+  const confirmExit = confirm(
+    "Exit Test?\nPlease ensure you have submitted your answers."
+  );
+
+  if (!confirmExit) return;
+
+  allowExit = true;
+
+  submitTest("Clean exit via exit button");
+});
+
+// ---------------- CONTROL PANEL BUTTONS ----------------
 document.getElementById("reenterBtn").addEventListener("click", async () => {
   await document.documentElement.requestFullscreen().catch(()=>{});
   controlPanel.style.display = "none";
