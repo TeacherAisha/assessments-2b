@@ -9,7 +9,7 @@
   body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: #0a2342; /* dark blue */
+    background: #0a2342;
     color: white;
     overflow: hidden;
   }
@@ -51,26 +51,27 @@
     z-index: 1000;
   }
 
+  /* FORM */
   iframe {
     width: 100vw;
     height: 100vh;
     border: none;
   }
 
-  /* EXIT UI (hidden initially) */
+  /* EXIT UI */
   #exitWrapper {
     position: fixed;
     right: 20px;
     top: 50%;
     transform: translateY(-50%);
     z-index: 9999999;
-    display: none; /* IMPORTANT */
+    display: none;
     flex-direction: column;
     align-items: center;
   }
 
   #exitWarningText {
-    background: #ffd700; /* yellow */
+    background: #ffd700;
     color: black;
     padding: 10px;
     border-radius: 8px;
@@ -91,7 +92,7 @@
     width: 180px;
   }
 
-  /* CONTROL PANEL */
+  /* FULLSCREEN WARNING PANEL */
   #controlPanel {
     position: fixed;
     top: 50%;
@@ -108,17 +109,11 @@
   #controlPanel button {
     padding: 15px 20px;
     font-size: 16px;
-    margin: 10px;
+    margin-top: 10px;
     cursor: pointer;
   }
 
-  #submitExitBtn {
-    background: red;
-    color: white;
-    border: none;
-  }
-
-  /* LOG */
+  /* ACTIVITY LOG */
   #logBox {
     position: fixed;
     bottom: 10px;
@@ -127,8 +122,9 @@
     color: #00ff00;
     padding: 10px;
     font-size: 12px;
-    max-width: 300px;
+    max-width: 320px;
     z-index: 2000;
+    border-radius: 8px;
   }
 </style>
 </head>
@@ -152,24 +148,24 @@
 <!-- TIMER -->
 <div id="timer">40:00</div>
 
-<!-- EXIT UI (RIGHT SIDE) -->
+<!-- EXIT UI -->
 <div id="exitWrapper">
   <div id="exitWarningText">
     Submit your assessment before exiting.
   </div>
+
   <button id="exitTestBtn">Exit Test</button>
 </div>
 
-<!-- CONTROL PANEL -->
+<!-- FULLSCREEN WARNING -->
 <div id="controlPanel">
   <h3>You exited fullscreen</h3>
   <p>Please return to continue the test</p>
 
   <button id="reenterBtn">Re-enter Fullscreen</button>
-  <button id="submitExitBtn">Submit & Exit</button>
 </div>
 
-<!-- LOG -->
+<!-- ACTIVITY LOG -->
 <div id="logBox">
   <b>Activity Log</b>
   <div id="logContent"></div>
@@ -180,13 +176,15 @@
 
 <script>
 
-// ---------------- SETUP ----------------
+// ---------------- STUDENT ID ----------------
 let studentID = prompt("Enter your Student ID:");
+
 if (!studentID) {
   alert("Student ID required.");
   location.reload();
 }
 
+// ---------------- VARIABLES ----------------
 let timeLeft = 40 * 60;
 let tabSwitchCount = 0;
 let maxViolations = 3;
@@ -198,16 +196,17 @@ const startBtn = document.getElementById("startBtn");
 const warningScreen = document.getElementById("warningScreen");
 const timerDisplay = document.getElementById("timer");
 const controlPanel = document.getElementById("controlPanel");
+const exitWrapper = document.getElementById("exitWrapper");
 
 // ---------------- START TEST ----------------
 startBtn.addEventListener("click", async () => {
 
-  await document.documentElement.requestFullscreen().catch(()=>{});
+  await document.documentElement.requestFullscreen().catch(() => {});
 
   warningScreen.style.display = "none";
 
-  // SHOW EXIT UI ONLY AFTER START
-  document.getElementById("exitWrapper").style.display = "flex";
+  // show exit button only after test starts
+  exitWrapper.style.display = "flex";
 
   startTimer();
   startWatchdog();
@@ -218,11 +217,11 @@ function startTimer() {
 
   setInterval(() => {
 
-    let m = Math.floor(timeLeft / 60);
-    let s = timeLeft % 60;
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
 
     timerDisplay.textContent =
-      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
     timeLeft--;
 
@@ -233,20 +232,23 @@ function startTimer() {
   }, 1000);
 }
 
-// ---------------- WATCHDOG ----------------
+// ---------------- FULLSCREEN WATCHDOG ----------------
 function startWatchdog() {
 
   setInterval(() => {
 
     if (!document.fullscreenElement && !allowExit) {
+
       controlPanel.style.display = "block";
-      logEvent("Fullscreen lost");
+
+      logEvent("Fullscreen lost and reported to admin");
+
     }
 
   }, 500);
 }
 
-// ---------------- TAB SWITCH ----------------
+// ---------------- TAB SWITCH DETECTION ----------------
 document.addEventListener("visibilitychange", () => {
 
   if (document.hidden) {
@@ -263,7 +265,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ---------------- EXIT BUTTON ----------------
+// ---------------- EXIT TEST BUTTON ----------------
 document.getElementById("exitTestBtn").addEventListener("click", () => {
 
   const confirmExit = confirm(
@@ -277,36 +279,40 @@ document.getElementById("exitTestBtn").addEventListener("click", () => {
   submitTest("Clean exit via exit button");
 });
 
-// ---------------- CONTROL PANEL BUTTONS ----------------
+// ---------------- RE-ENTER FULLSCREEN ----------------
 document.getElementById("reenterBtn").addEventListener("click", async () => {
-  await document.documentElement.requestFullscreen().catch(()=>{});
+
+  await document.documentElement.requestFullscreen().catch(() => {});
+
   controlPanel.style.display = "none";
+
 });
 
-document.getElementById("submitExitBtn").addEventListener("click", () => {
-  submitTest("Student submitted test");
-});
-
-// ---------------- LOG ----------------
+// ---------------- LOG SYSTEM ----------------
 function logEvent(event) {
 
   let time = new Date().toLocaleTimeString();
 
-  activityLog.push({ time, event });
+  activityLog.push({
+    time: time,
+    event: event
+  });
 
   document.getElementById("logContent").innerHTML =
-    activityLog.map(l => `${l.time} - ${l.event}`).join("<br>");
+    activityLog.map(log =>
+      `${log.time} - ${log.event}`
+    ).join("<br>");
 }
 
-// ---------------- SUBMIT ----------------
+// ---------------- SUBMIT TEST ----------------
 function submitTest(reason) {
 
   allowExit = true;
 
   controlPanel.style.display = "none";
-  document.getElementById("exitWrapper").style.display = "none";
+  exitWrapper.style.display = "none";
 
-  document.exitFullscreen().catch(()=>{});
+  document.exitFullscreen().catch(() => {});
 
   logEvent("SUBMIT: " + reason);
 
