@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Online Test</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      overflow: hidden;
+    }
+
+    #warningScreen {
+      position: fixed;
+      inset: 0;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+      z-index: 9999;
+    }
+
+    #warningScreen h1 {
+      color: #ff4d4d;
+    }
+
+    #startBtn {
+      padding: 15px 30px;
+      font-size: 18px;
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+      background: green;
+      color: white;
+      margin-top: 20px;
+    }
+
+    #timer {
+      position: fixed;
+      top: 10px;
+      right: 20px;
+      background: black;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 22px;
+      z-index: 1000;
+    }
+
+    iframe {
+      width: 100vw;
+      height: 100vh;
+      border: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="warningScreen">
+  <h1>Test Rules</h1>
+
+  <p>
+    You have 40 minutes.<br><br>
+    Do NOT switch tabs.<br><br>
+    Stay in fullscreen mode.
+  </p>
+
+  <button id="startBtn">Start Test</button>
+</div>
+
+<div id="timer">40:00</div>
+
+<!-- PUT YOUR GOOGLE FORM LINK BELOW -->
+<iframe
+  src="https://docs.google.com/forms/d/e/1FAIpQLScg1PYiM-h9NnkjDzM0oG0fzyL26ovUesSjnBhBjrysBXXd4g/viewform?embedded=true"
+  allowfullscreen>
+</iframe>
+
+<script>
+
+const startBtn = document.getElementById("startBtn");
+const warningScreen = document.getElementById("warningScreen");
+const timerDisplay = document.getElementById("timer");
+
+let timeLeft = 40 * 60;
+
+startBtn.addEventListener("click", async () => {
+
+  if (document.documentElement.requestFullscreen) {
+    await document.documentElement.requestFullscreen();
+  }
+
+  warningScreen.style.display = "none";
+
+  startTimer();
+});
+
+function startTimer() {
+
+  const timer = setInterval(() => {
+
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+
+    timerDisplay.textContent =
+      `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    timeLeft--;
+
+    if (timeLeft < 0) {
+      clearInterval(timer);
+
+      alert("Time is up!");
+
+      location.reload();
+    }
+
+  }, 1000);
+}
+
+document.addEventListener("visibilitychange", () => {
+
+  if (document.hidden) {
+    alert("Warning! Do not switch tabs.");
+  }
+
+});
+
+document.addEventListener("fullscreenchange", () => {
+
+  if (!document.fullscreenElement) {
+    alert("You exited fullscreen mode.");
+  }
+
+});
+
+</script>
+
+</body>
+</html>
