@@ -318,6 +318,8 @@ document.getElementById("reenterBtn").addEventListener("click", async () => {
 
   await document.documentElement.requestFullscreen().catch(() => {});
 
+  logEvent("Fullscreen mode restored");
+
   controlPanel.style.display = "none";
 
 });
