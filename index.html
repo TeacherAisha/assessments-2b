@@ -79,10 +79,10 @@
   <h1>Online Test Rules</h1>
 
   <p>
-    • Enter full screen mode<br><br>
+    • Fullscreen required<br><br>
     • 40 minutes duration<br><br>
-    • Do NOT switch tabs or exit fullscreen<br><br>
-    • Violations will be logged and reported to the administrator
+    • Do NOT switch tabs<br><br>
+    • Exits will be logged and reported
   </p>
 
   <button id="startBtn">Start Test</button>
@@ -95,12 +95,12 @@
   <div id="logContent"></div>
 </div>
 
-<!-- PUT YOUR GOOGLE FORM LINK BELOW -->
+<!-- GOOGLE FORM -->
 <iframe src="https://docs.google.com/forms/d/e/1FAIpQLScg1PYiM-h9NnkjDzM0oG0fzyL26ovUesSjnBhBjrysBXXd4g/viewform?embedded=true"></iframe>
 
 <script>
 
-// -------------------- SETUP --------------------
+// ---------------- VARIABLES ----------------
 let studentID = prompt("Enter your Student ID:");
 
 if (!studentID) {
@@ -112,13 +112,14 @@ let timeLeft = 40 * 60;
 let tabSwitchCount = 0;
 let maxViolations = 3;
 let activityLog = [];
+let allowExit = false;
 
-// -------------------- ELEMENTS --------------------
+// ---------------- ELEMENTS ----------------
 const startBtn = document.getElementById("startBtn");
 const warningScreen = document.getElementById("warningScreen");
 const timerDisplay = document.getElementById("timer");
 
-// -------------------- START TEST --------------------
+// ---------------- START TEST ----------------
 startBtn.addEventListener("click", async () => {
 
   if (document.documentElement.requestFullscreen) {
@@ -130,7 +131,7 @@ startBtn.addEventListener("click", async () => {
   startTimer();
 });
 
-// -------------------- TIMER --------------------
+// ---------------- TIMER ----------------
 function startTimer() {
 
   const timer = setInterval(() => {
@@ -151,7 +152,7 @@ function startTimer() {
   }, 1000);
 }
 
-// -------------------- TAB SWITCH DETECTION --------------------
+// ---------------- TAB SWITCH ----------------
 document.addEventListener("visibilitychange", () => {
 
   if (document.hidden) {
@@ -168,26 +169,30 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// -------------------- FULLSCREEN DETECTION --------------------
+// ---------------- FULLSCREEN LOCK ----------------
 document.addEventListener("fullscreenchange", () => {
 
   if (!document.fullscreenElement) {
 
+    if (allowExit) return;
+
     tabSwitchCount++;
 
-    logEvent("Exited fullscreen mode");
+    logEvent("Exited fullscreen");
 
-    alert(`WARNING: You exited fullscreen mode. Admin will be notified.`);
+    alert("WARNING: You exited fullscreen mode.\nAdmin will be notified.");
 
-    document.documentElement.requestFullscreen();
+    setTimeout(() => {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }, 300);
 
     if (tabSwitchCount >= maxViolations) {
-      submitTest("Exited fullscreen too many times");
+      submitTest("Too many fullscreen exits");
     }
   }
 });
 
-// -------------------- LOG FUNCTION --------------------
+// ---------------- LOG SYSTEM ----------------
 function logEvent(event) {
 
   let time = new Date().toLocaleTimeString();
@@ -198,7 +203,7 @@ function logEvent(event) {
   });
 }
 
-// -------------------- DISPLAY LOG --------------------
+// ---------------- DISPLAY LOG ----------------
 setInterval(() => {
 
   document.getElementById("logContent").innerHTML =
@@ -206,14 +211,17 @@ setInterval(() => {
 
 }, 2000);
 
-// -------------------- AUTO SUBMIT --------------------
+// ---------------- SUBMIT TEST ----------------
 function submitTest(reason) {
 
-  logEvent("AUTO SUBMIT: " + reason);
+  allowExit = true;
+
+  document.exitFullscreen();
+
+  logEvent("SUBMIT: " + reason);
 
   alert("Test submitted: " + reason);
 
-  // Optional: redirect or close
   window.location.href = "about:blank";
 }
 
