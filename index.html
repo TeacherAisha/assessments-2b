@@ -9,11 +9,12 @@
   body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: #0a2342; /* DARK BLUE */
+    background: #0a2342; /* dark blue */
     color: white;
     overflow: hidden;
   }
 
+  /* START SCREEN */
   #warningScreen {
     position: fixed;
     inset: 0;
@@ -38,6 +39,7 @@
     margin-top: 20px;
   }
 
+  /* TIMER */
   #timer {
     position: fixed;
     top: 10px;
@@ -55,35 +57,38 @@
     border: none;
   }
 
-  /* RIGHT SIDE EXIT UI */
+  /* EXIT UI (hidden initially) */
   #exitWrapper {
     position: fixed;
-    right: 15px;
+    right: 20px;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 999999;
-    text-align: center;
+    z-index: 9999999;
+    display: none; /* IMPORTANT */
+    flex-direction: column;
+    align-items: center;
   }
 
   #exitWarningText {
-    background: rgba(255, 0, 0, 0.85);
-    color: white;
+    background: #ffd700; /* yellow */
+    color: black;
     padding: 10px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 13px;
+    width: 180px;
+    text-align: center;
     margin-bottom: 10px;
-    width: 160px;
   }
 
   #exitTestBtn {
-    padding: 15px 18px;
+    padding: 15px;
     font-size: 14px;
     background: red;
     color: white;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    width: 160px;
+    width: 180px;
   }
 
   /* CONTROL PANEL */
@@ -113,7 +118,7 @@
     border: none;
   }
 
-  /* LOG BOX */
+  /* LOG */
   #logBox {
     position: fixed;
     bottom: 10px;
@@ -147,7 +152,7 @@
 <!-- TIMER -->
 <div id="timer">40:00</div>
 
-<!-- EXIT UI -->
+<!-- EXIT UI (RIGHT SIDE) -->
 <div id="exitWrapper">
   <div id="exitWarningText">
     Submit your assessment before exiting.
@@ -175,7 +180,7 @@
 
 <script>
 
-// ---------------- VARIABLES ----------------
+// ---------------- SETUP ----------------
 let studentID = prompt("Enter your Student ID:");
 if (!studentID) {
   alert("Student ID required.");
@@ -194,12 +199,15 @@ const warningScreen = document.getElementById("warningScreen");
 const timerDisplay = document.getElementById("timer");
 const controlPanel = document.getElementById("controlPanel");
 
-// ---------------- START ----------------
+// ---------------- START TEST ----------------
 startBtn.addEventListener("click", async () => {
 
   await document.documentElement.requestFullscreen().catch(()=>{});
 
   warningScreen.style.display = "none";
+
+  // SHOW EXIT UI ONLY AFTER START
+  document.getElementById("exitWrapper").style.display = "flex";
 
   startTimer();
   startWatchdog();
@@ -236,7 +244,6 @@ function startWatchdog() {
     }
 
   }, 500);
-
 }
 
 // ---------------- TAB SWITCH ----------------
@@ -297,6 +304,7 @@ function submitTest(reason) {
   allowExit = true;
 
   controlPanel.style.display = "none";
+  document.getElementById("exitWrapper").style.display = "none";
 
   document.exitFullscreen().catch(()=>{});
 
