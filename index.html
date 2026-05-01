@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Online Test</title>
+<title>Secure Online Test</title>
 
 <style>
   body {
@@ -55,29 +55,18 @@
     border: none;
   }
 
-  #logBox {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    background: black;
-    color: #00ff00;
-    padding: 10px;
-    font-size: 12px;
-    max-width: 300px;
-    z-index: 2000;
-  }
-
+  /* CONTROL PANEL */
   #controlPanel {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.9);
-    padding: 20px;
+    background: rgba(0,0,0,0.95);
+    padding: 25px;
     border-radius: 12px;
     text-align: center;
     display: none;
-    z-index: 9999;
+    z-index: 99999;
   }
 
   #controlPanel button {
@@ -92,39 +81,76 @@
     color: white;
     border: none;
   }
+
+  /* RIGHT SIDE WARNING */
+  #exitWarning {
+    position: fixed;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 0, 0, 0.85);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 14px;
+    max-width: 180px;
+    z-index: 999999;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  }
+
+  /* LOG BOX */
+  #logBox {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    background: black;
+    color: #00ff00;
+    padding: 10px;
+    font-size: 12px;
+    max-width: 300px;
+    z-index: 2000;
+  }
 </style>
 </head>
 
 <body>
 
+<!-- RIGHT SIDE WARNING -->
+<div id="exitWarning">
+  ⚠️ Click <b>Submit & Exit</b> before you exit the test
+</div>
+
+<!-- START SCREEN -->
 <div id="warningScreen">
-  <h1>Online Test Rules</h1>
+  <h1>Secure Online Test</h1>
 
   <p>
     • Fullscreen required<br><br>
-    • 40 minutes duration<br><br>
-    • Do NOT switch tabs<br><br>
-    • Violations are logged and reported
+    • 40-minute timer<br><br>
+    • No tab switching allowed<br><br>
+    • Violations are recorded
   </p>
 
   <button id="startBtn">Start Test</button>
 </div>
 
+<!-- TIMER -->
 <div id="timer">40:00</div>
-
-<div id="logBox">
-  <b>Activity Log</b>
-  <div id="logContent"></div>
-</div>
 
 <!-- CONTROL PANEL -->
 <div id="controlPanel">
-
-  <h3>Fullscreen Required</h3>
+  <h3>You exited fullscreen</h3>
+  <p>Please return to continue the test</p>
 
   <button id="reenterBtn">Re-enter Fullscreen</button>
-  <button id="submitExitBtn">Submit & Exit Test</button>
+  <button id="submitExitBtn">Submit & Exit</button>
+</div>
 
+<!-- LOG -->
+<div id="logBox">
+  <b>Activity Log</b>
+  <div id="logContent"></div>
 </div>
 
 <!-- GOOGLE FORM -->
@@ -134,9 +160,8 @@
 
 // ---------------- VARIABLES ----------------
 let studentID = prompt("Enter your Student ID:");
-
 if (!studentID) {
-  alert("Student ID is required.");
+  alert("Student ID required.");
   location.reload();
 }
 
@@ -152,37 +177,49 @@ const warningScreen = document.getElementById("warningScreen");
 const timerDisplay = document.getElementById("timer");
 const controlPanel = document.getElementById("controlPanel");
 
-// ---------------- START TEST ----------------
+// ---------------- START ----------------
 startBtn.addEventListener("click", async () => {
 
-  if (document.documentElement.requestFullscreen) {
-    await document.documentElement.requestFullscreen();
-  }
+  await document.documentElement.requestFullscreen().catch(()=>{});
 
   warningScreen.style.display = "none";
 
   startTimer();
+  startWatchdog();
 });
 
 // ---------------- TIMER ----------------
 function startTimer() {
 
-  const timer = setInterval(() => {
+  setInterval(() => {
 
-    let minutes = Math.floor(timeLeft / 60);
-    let seconds = timeLeft % 60;
+    let m = Math.floor(timeLeft / 60);
+    let s = timeLeft % 60;
 
     timerDisplay.textContent =
-      `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 
     timeLeft--;
 
     if (timeLeft < 0) {
-      clearInterval(timer);
       submitTest("Time expired");
     }
 
   }, 1000);
+}
+
+// ---------------- WATCHDOG ----------------
+function startWatchdog() {
+
+  setInterval(() => {
+
+    if (!document.fullscreenElement && !allowExit) {
+      controlPanel.style.display = "block";
+      logEvent("Fullscreen lost (watchdog)");
+    }
+
+  }, 500);
+
 }
 
 // ---------------- TAB SWITCH ----------------
@@ -194,7 +231,7 @@ document.addEventListener("visibilitychange", () => {
 
     logEvent("Tab switch detected");
 
-    alert(`Warning! Tab switch detected (${tabSwitchCount}/${maxViolations}).`);
+    alert(`Warning (${tabSwitchCount}/${maxViolations})`);
 
     if (tabSwitchCount >= maxViolations) {
       submitTest("Too many tab switches");
@@ -202,38 +239,10 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ---------------- FULLSCREEN CONTROL ----------------
-document.addEventListener("fullscreenchange", () => {
-
-  if (!document.fullscreenElement) {
-
-    if (allowExit) return;
-
-    tabSwitchCount++;
-
-    logEvent("Exited fullscreen");
-
-    alert("WARNING: You exited fullscreen mode.\nUse the buttons to continue.");
-
-    controlPanel.style.display = "block";
-
-    if (tabSwitchCount >= maxViolations) {
-      submitTest("Too many fullscreen exits");
-    }
-
-  } else {
-    controlPanel.style.display = "none";
-  }
-
-});
-
 // ---------------- BUTTONS ----------------
 document.getElementById("reenterBtn").addEventListener("click", async () => {
-  try {
-    await document.documentElement.requestFullscreen();
-  } catch (e) {
-    alert("Could not enter fullscreen. Try again.");
-  }
+  await document.documentElement.requestFullscreen().catch(()=>{});
+  controlPanel.style.display = "none";
 });
 
 document.getElementById("submitExitBtn").addEventListener("click", () => {
@@ -245,32 +254,24 @@ function logEvent(event) {
 
   let time = new Date().toLocaleTimeString();
 
-  activityLog.push({
-    time: time,
-    event: event
-  });
-}
-
-// ---------------- DISPLAY LOG ----------------
-setInterval(() => {
+  activityLog.push({ time, event });
 
   document.getElementById("logContent").innerHTML =
     activityLog.map(l => `${l.time} - ${l.event}`).join("<br>");
+}
 
-}, 2000);
-
-// ---------------- SUBMIT TEST ----------------
+// ---------------- SUBMIT ----------------
 function submitTest(reason) {
 
   allowExit = true;
 
-  document.exitFullscreen();
-
   controlPanel.style.display = "none";
+
+  document.exitFullscreen().catch(()=>{});
 
   logEvent("SUBMIT: " + reason);
 
-  alert("Test submitted: " + reason);
+  alert("Test ended: " + reason);
 
   window.location.href = "about:blank";
 }
