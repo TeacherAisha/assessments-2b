@@ -51,11 +51,13 @@
     z-index: 1000;
   }
 
-  /* FORM */
+  /* RESPONSIVE FORM */
   iframe {
-    width: 100vw;
+    width: 100%;
     height: 100vh;
     border: none;
+    padding-right: 220px;
+    box-sizing: border-box;
   }
 
   /* EXIT UI */
@@ -68,6 +70,7 @@
     display: none;
     flex-direction: column;
     align-items: center;
+    zoom: 0.9;
   }
 
   #exitWarningText {
@@ -79,6 +82,7 @@
     width: 180px;
     text-align: center;
     margin-bottom: 10px;
+    font-weight: bold;
   }
 
   #exitTestBtn {
@@ -126,6 +130,25 @@
     z-index: 2000;
     border-radius: 8px;
   }
+
+  /* MOBILE/TABLET OPTIMIZATION */
+  @media (max-width: 900px) {
+
+    #exitWrapper {
+      right: 10px;
+      zoom: 0.8;
+    }
+
+    iframe {
+      padding-right: 170px;
+    }
+
+    #timer {
+      font-size: 18px;
+      padding: 8px 14px;
+    }
+  }
+
 </style>
 </head>
 
@@ -160,7 +183,11 @@
 <!-- FULLSCREEN WARNING -->
 <div id="controlPanel">
   <h3>You exited fullscreen</h3>
-  <p>Please return to continue the test</p>
+
+  <p>
+    Fullscreen lost and reported to admin.<br><br>
+    Please return to continue the test.
+  </p>
 
   <button id="reenterBtn">Re-enter Fullscreen</button>
 </div>
@@ -190,6 +217,7 @@ let tabSwitchCount = 0;
 let maxViolations = 3;
 let activityLog = [];
 let allowExit = false;
+let watchdogInterval = null;
 
 // ---------------- ELEMENTS ----------------
 const startBtn = document.getElementById("startBtn");
@@ -205,11 +233,12 @@ startBtn.addEventListener("click", async () => {
 
   warningScreen.style.display = "none";
 
-  // show exit button only after test starts
+  // show exit controls only after starting
   exitWrapper.style.display = "flex";
 
   startTimer();
   startWatchdog();
+
 });
 
 // ---------------- TIMER ----------------
@@ -230,12 +259,13 @@ function startTimer() {
     }
 
   }, 1000);
+
 }
 
-// ---------------- FULLSCREEN WATCHDOG ----------------
+// ---------------- WATCHDOG ----------------
 function startWatchdog() {
 
-  setInterval(() => {
+  watchdogInterval = setInterval(() => {
 
     if (!document.fullscreenElement && !allowExit) {
 
@@ -246,12 +276,13 @@ function startWatchdog() {
     }
 
   }, 500);
+
 }
 
 // ---------------- TAB SWITCH DETECTION ----------------
 document.addEventListener("visibilitychange", () => {
 
-  if (document.hidden) {
+  if (document.hidden && !allowExit) {
 
     tabSwitchCount++;
 
@@ -260,9 +291,13 @@ document.addEventListener("visibilitychange", () => {
     alert(`Warning (${tabSwitchCount}/${maxViolations})`);
 
     if (tabSwitchCount >= maxViolations) {
+
       submitTest("Too many tab switches");
+
     }
+
   }
+
 });
 
 // ---------------- EXIT TEST BUTTON ----------------
@@ -274,9 +309,8 @@ document.getElementById("exitTestBtn").addEventListener("click", () => {
 
   if (!confirmExit) return;
 
-  allowExit = true;
-
   submitTest("Clean exit via exit button");
+
 });
 
 // ---------------- RE-ENTER FULLSCREEN ----------------
@@ -302,12 +336,20 @@ function logEvent(event) {
     activityLog.map(log =>
       `${log.time} - ${log.event}`
     ).join("<br>");
+
 }
 
 // ---------------- SUBMIT TEST ----------------
 function submitTest(reason) {
 
   allowExit = true;
+
+  // stop watchdog
+  if (watchdogInterval) {
+
+    clearInterval(watchdogInterval);
+
+  }
 
   controlPanel.style.display = "none";
   exitWrapper.style.display = "none";
@@ -318,7 +360,28 @@ function submitTest(reason) {
 
   alert("Test ended: " + reason);
 
-  window.location.href = "about:blank";
+  document.body.innerHTML = `
+    <div style="
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      background:#0a2342;
+      color:white;
+      font-family:Arial, sans-serif;
+      text-align:center;
+      flex-direction:column;
+      padding:20px;
+    ">
+      <h1>Thank You</h1>
+
+      <p style="font-size:20px;">
+        Thank you for submitting your work.
+      </p>
+
+    </div>
+  `;
+
 }
 
 </script>
